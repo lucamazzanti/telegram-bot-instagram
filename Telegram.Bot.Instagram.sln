@@ -3,7 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30002.166
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Telegram.Bot.Instagram", "Telegram.Bot.Instagram\Telegram.Bot.Instagram.csproj", "{C6A50EF3-2F38-4563-B158-E79360D585BA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Telegram.Bot.Instagram", "src\Telegram.Bot.Instagram\Telegram.Bot.Instagram.csproj", "{8172248E-1765-4C4D-980B-6B99B410C15A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Telegram.Bot.Instagram.Tests", "test\Telegram.Bot.Instagram.Tests\Telegram.Bot.Instagram.Tests.csproj", "{F45E8AD3-D43A-4878-ACB8-E2959A2C2DE8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Telegram.Bot.Instagram.Tests.Intergation", "test\Telegram.Bot.Instagram.Tests.Intergation\Telegram.Bot.Instagram.Tests.Intergation.csproj", "{DFC43FFD-B4FB-437A-A704-C9C9CA410E2E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,10 +15,18 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{C6A50EF3-2F38-4563-B158-E79360D585BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C6A50EF3-2F38-4563-B158-E79360D585BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C6A50EF3-2F38-4563-B158-E79360D585BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C6A50EF3-2F38-4563-B158-E79360D585BA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8172248E-1765-4C4D-980B-6B99B410C15A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8172248E-1765-4C4D-980B-6B99B410C15A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8172248E-1765-4C4D-980B-6B99B410C15A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8172248E-1765-4C4D-980B-6B99B410C15A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F45E8AD3-D43A-4878-ACB8-E2959A2C2DE8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F45E8AD3-D43A-4878-ACB8-E2959A2C2DE8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F45E8AD3-D43A-4878-ACB8-E2959A2C2DE8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F45E8AD3-D43A-4878-ACB8-E2959A2C2DE8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DFC43FFD-B4FB-437A-A704-C9C9CA410E2E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DFC43FFD-B4FB-437A-A704-C9C9CA410E2E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DFC43FFD-B4FB-437A-A704-C9C9CA410E2E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DFC43FFD-B4FB-437A-A704-C9C9CA410E2E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
