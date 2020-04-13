@@ -17,56 +17,63 @@ namespace Telegram.Bot.Instagram.Tests.Instagram.Api.Unofficial
         [Fact]
         public async Task LoginAsync_NotNullUserCredentials_ExpectedRequestFormat()
         {
-            var clientHandler = new InstagramClientHandlerMock();
+            var clientHandler = new InstagramClientHandlerMock
+            {
+                OnLoginCallback = request =>
+                {
+                    var headers = request.Headers.ToDictionary(t => t.Key, t => t.Value.ToArray());
+                    var content = request.Content.ReadAsStringAsync().Result;
+
+                    /*
+                    POST https://www.instagram.com/accounts/login/ajax/ HTTP/1.1
+                    Host: www.instagram.com
+                    Connection: keep-alive
+                    Content-Length: 295
+                    X-IG-WWW-Claim: hmac.AR1Z9s53CtGTOWRd_KWw-fadYaRA89Ai9V2TlSUEtbg91Uww
+                    X-Instagram-AJAX: 3aed6acc7f7e
+                    Content-Type: application/x-www-form-urlencoded
+                    Accept: * /*
+                    Sec-Fetch-Dest: empty
+                    X-Requested-With: XMLHttpRequest
+                    User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.162 Safari/537.36
+                    X-CSRFToken: PtOw40RiRcN5bBVEoZUttkEbLetmO4N6
+                    X-IG-App-ID: 936619743392333
+                    Origin: https://www.instagram.com
+                    Sec-Fetch-Site: same-origin
+                    Sec-Fetch-Mode: cors
+                    Referer: https://www.instagram.com/
+                    Accept-Encoding: gzip, deflate, br
+                    Accept-Language: en,it;q=0.9,en-US;q=0.8,de;q=0.7,es;q=0.6,ru;q=0.5,tr;q=0.4,zh-CN;q=0.3,zh;q=0.2,pt;q=0.1,da;q=0.1
+                    Cookie: csrftoken=PtOw40RiRcN5bBVEoZUttkEbLetmO444;"
+
+                    username=johndoe&password=123            
+                    */
+
+                    Assert.Equal(HttpMethod.Post, request.Method);
+                    Assert.Equal("https://www.instagram.com/accounts/login/ajax/", request.RequestUri.AbsoluteUri);
+                    Assert.Equal("application/x-www-form-urlencoded", request.Content.Headers.ContentType.MediaType);
+                    Assert.Equal("keep-alive", request.Headers.Connection.ToString());
+                    Assert.Equal("https://www.instagram.com", headers["Origin"][0]);
+                    Assert.Equal("https://www.instagram.com/", request.Headers.Referrer.AbsoluteUri);
+                    Assert.Equal("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.162 Safari/537.36", request.Headers.UserAgent.ToString());
+                    Assert.Equal("XMLHttpRequest", headers["X-Requested-With"][0]);
+                    Assert.Equal("same-origin", headers["Sec-Fetch-Site"][0]);
+                    Assert.Equal("cors", headers["Sec-Fetch-Mode"][0]);
+                    Assert.Equal("1", headers["X-Instagram-AJAX"][0]);
+                    Assert.Equal("1", headers["X-IG-App-ID"][0]);
+                    Assert.NotNull(headers["X-CSRFToken"][0]);
+                    Assert.Equal("username=johndoe&password=123", content);
+
+                    return new HttpResponseMessage(HttpStatusCode.OK);
+                }
+            };
+
             using var api = new InstagramApi(clientHandler);
             var userCredentials = new UserCredentials("johndoe", "123");
+
             var isLogged = await api.LoginAsync(userCredentials);
 
             Assert.True(isLogged);
-
-            HttpRequestMessage request = clientHandler.LastRequest;
-            var headers = request.Headers.ToDictionary(t => t.Key, t => t.Value.ToArray());
-            var content = request.Content.ReadAsStringAsync().Result;
-
-            /*
-            POST https://www.instagram.com/accounts/login/ajax/ HTTP/1.1
-            Host: www.instagram.com
-            Connection: keep-alive
-            Content-Length: 295
-            X-IG-WWW-Claim: hmac.AR1Z9s53CtGTOWRd_KWw-fadYaRA89Ai9V2TlSUEtbg91Uww
-            X-Instagram-AJAX: 3aed6acc7f7e
-            Content-Type: application/x-www-form-urlencoded
-            Accept: * /*
-            Sec-Fetch-Dest: empty
-            X-Requested-With: XMLHttpRequest
-            User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.162 Safari/537.36
-            X-CSRFToken: PtOw40RiRcN5bBVEoZUttkEbLetmO4N6
-            X-IG-App-ID: 936619743392333
-            Origin: https://www.instagram.com
-            Sec-Fetch-Site: same-origin
-            Sec-Fetch-Mode: cors
-            Referer: https://www.instagram.com/
-            Accept-Encoding: gzip, deflate, br
-            Accept-Language: en,it;q=0.9,en-US;q=0.8,de;q=0.7,es;q=0.6,ru;q=0.5,tr;q=0.4,zh-CN;q=0.3,zh;q=0.2,pt;q=0.1,da;q=0.1
-            Cookie: csrftoken=PtOw40RiRcN5bBVEoZUttkEbLetmO444;"
-
-            username=johndoe&password=123            
-            */
-
-            Assert.Equal(HttpMethod.Post, request.Method);
-            Assert.Equal("https://www.instagram.com/accounts/login/ajax/", request.RequestUri.AbsoluteUri);
-            Assert.Equal("application/x-www-form-urlencoded", request.Content.Headers.ContentType.MediaType);
-            Assert.Equal("keep-alive", request.Headers.Connection.ToString());
-            Assert.Equal("https://www.instagram.com", headers["Origin"][0]);
-            Assert.Equal("https://www.instagram.com/", request.Headers.Referrer.AbsoluteUri);
-            Assert.Equal("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.162 Safari/537.36", request.Headers.UserAgent.ToString());
-            Assert.Equal("XMLHttpRequest", headers["X-Requested-With"][0]);
-            Assert.Equal("same-origin", headers["Sec-Fetch-Site"][0]);
-            Assert.Equal("cors", headers["Sec-Fetch-Mode"][0]);
-            Assert.Equal("1", headers["X-Instagram-AJAX"][0]);
-            Assert.Equal("1", headers["X-IG-App-ID"][0]);
-            Assert.NotNull(headers["X-CSRFToken"][0]);
-            Assert.Equal("username=johndoe&password=123", content);
         }
 
         [Fact]
@@ -86,8 +93,7 @@ namespace Telegram.Bot.Instagram.Tests.Instagram.Api.Unofficial
         [Fact]
         public async Task LoginAsync_WrongUserCredentials_ReturnsFalse()
         {
-            var clientHandler = new InstagramClientHandlerMock();
-            clientHandler.SetLoginResponse(new HttpResponseMessage(HttpStatusCode.Unauthorized));
+            var clientHandler = new InstagramClientHandlerMock {OnLoginCallback = request => new HttpResponseMessage(HttpStatusCode.Unauthorized)};
             using var api = new InstagramApi(clientHandler);
             Assert.Null(api.UserName);
 

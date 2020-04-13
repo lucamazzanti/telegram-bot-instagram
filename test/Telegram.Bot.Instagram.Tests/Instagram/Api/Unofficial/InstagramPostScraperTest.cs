@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using Newtonsoft.Json;
 using Telegram.Bot.Instagram.Instagram.Api.Unofficial;
 using Telegram.Bot.Instagram.Instagram.Api.Unofficial.Models;
 using Xunit;
@@ -10,7 +11,7 @@ namespace Telegram.Bot.Instagram.Tests.Instagram.Api.Unofficial
     public class InstagramPostScraperTest
     {
         [Fact]
-        public void ExtractGraphql_GivenInstagramPost_ItExtractTheGraphql()
+        public void ExtractGraphql_GivenLoggedInInstagramPost_ItExtractTheGraphql()
         {
             var instagramPost = new InstagramPost
             {
@@ -26,7 +27,27 @@ namespace Telegram.Bot.Instagram.Tests.Instagram.Api.Unofficial
             var grapqhl = InstagramPostScraper.ExtractGraphql(instagramPost).ToArray();
 
             Assert.Single(grapqhl);
-            Assert.Equal(@"{""graphql"":{""shortcode_media"":{""__typename"":""GraphImage"",""id"":""1280303637280241311"",""shortcode"":""B-lRBOYHraeXNozRvPCrtJ9h0esayWpvMjyQAE0""}}}", grapqhl[0]);
+            Assert.Equal("B-lRBOYHraeXNozRvPCrtJ9h0esayWpvMjyQAE0", grapqhl[0].Graphql.ShortCodeMedia.ShortCode);
+        }
+
+        [Fact]
+        public void ExtractGraphql_GivenNotLoggedInInstagramPost_ItExtractTheGraphql()
+        {
+            var instagramPost = new InstagramPost
+            {
+                Shortcode = "B-lRBOYHraeXNozRvPCrtJ9h0esayWpvMjyQAE0",
+                Url = new Uri("https://instagram.com/p/B-lRBOYHraeXNozRvPCrtJ9h0esayWpvMjyQAE0/"),
+                HtmlContent =
+                    @"<!DOCTYPE html><html lang=""en"" class=""no-js logged-in client-root""><body>
+                    <script type=""text/javascript"">window.__initialDataLoaded(window._sharedData);</script>
+                    <script type=""text/javascript"">window._sharedData = { ""config"": { ""csrf_token"": ""12345678"" }, ""entry_data"": { ""PostPage"": [{ ""graphql"": {""shortcode_media"":{""__typename"":""GraphImage"",""id"":""1280303637280241311"",""shortcode"":""B-lRBOYHraeXNozRvPCrtJ9h0esayWpvMjyQAE0""}} }] },""hostname"": ""www.instagram.com"" };</script>
+                    </body>"
+            };
+
+            var grapqhl = InstagramPostScraper.ExtractGraphql(instagramPost).ToArray();
+
+            Assert.Single(grapqhl);
+            Assert.Equal("B-lRBOYHraeXNozRvPCrtJ9h0esayWpvMjyQAE0", grapqhl[0].Graphql.ShortCodeMedia.ShortCode);
         }
 
         [Fact]

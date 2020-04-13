@@ -15,6 +15,9 @@ namespace Telegram.Bot.Instagram.Instagram.Api.Unofficial
 {
     public class InstagramApi : IDisposable
     {
+        private const string BaseAddress = "https://www.instagram.com";
+        private readonly Uri _baseurl = new Uri("https://www.instagram.com");
+
         private readonly HttpClientHandler _httpClientHandler;
         private readonly HttpClient _httpClient;
 
@@ -25,17 +28,18 @@ namespace Telegram.Bot.Instagram.Instagram.Api.Unofficial
         {
             _httpClientHandler = httpClientHandler ?? throw new ArgumentNullException(nameof(httpClientHandler));
             _cookieContainer = _httpClientHandler.CookieContainer ?? throw new ArgumentException("CookieContainer property mandatory", nameof(httpClientHandler));
-            _httpClient = new HttpClient(_httpClientHandler) {BaseAddress = new Uri("https://www.instagram.com")};
+            _httpClient = new HttpClient(_httpClientHandler) {BaseAddress = new Uri(BaseAddress) };
 
             PrepareRequestHeaders(_httpClient.DefaultRequestHeaders);
         }
 
-        private static void PrepareRequestHeaders(HttpRequestHeaders headers)
+        private void PrepareRequestHeaders(HttpRequestHeaders headers)
         {
             headers.Host = "www.instagram.com";
-            headers.Referrer = new Uri("https://www.instagram.com");
+            headers.Referrer = _baseurl;
             headers.ConnectionClose = false;
-            headers.Add("Origin", "https://www.instagram.com");
+
+            headers.Add("Origin", BaseAddress);
             headers.Add("Connection", "keep-alive");
             headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.162 Safari/537.36");
             headers.Add("X-Requested-With", "XMLHttpRequest");
@@ -55,7 +59,7 @@ namespace Telegram.Bot.Instagram.Instagram.Api.Unofficial
                 {"username", userCredentials.UserName},
                 {"password", userCredentials.Password}
             };
-            var request = new HttpRequestMessage(HttpMethod.Post, "/accounts/login/ajax/")
+            using var request = new HttpRequestMessage(HttpMethod.Post, "/accounts/login/ajax/")
             {
                 Content = new FormUrlEncodedContent(fields)
             };
@@ -63,7 +67,7 @@ namespace Telegram.Bot.Instagram.Instagram.Api.Unofficial
             //PrepareRequestHeaders(request.Headers);
             request.Headers.Add("X-CSRFToken", token);
 
-            HttpResponseMessage response = await _httpClient.SendAsync(request);
+            using HttpResponseMessage response = await _httpClient.SendAsync(request);
 
             if (response.StatusCode != HttpStatusCode.OK) return false;
 
@@ -86,14 +90,17 @@ namespace Telegram.Bot.Instagram.Instagram.Api.Unofficial
             ////second retrieval: get new one from share data url
             //if (string.IsNullOrEmpty(token))
             //{
-            HttpResponseMessage sharedDataResponse = await _httpClient.GetAsync("/data/shared_data/");
+            using HttpResponseMessage sharedDataResponse = await _httpClient.GetAsync("/data/shared_data/");
+
             if (sharedDataResponse.StatusCode != HttpStatusCode.OK) throw new InvalidOperationException("Unable to retrieve CSRF Token");
+
             var sharedDataRawContent = await sharedDataResponse.Content.ReadAsStringAsync();
             var sharedDataModel = JsonConvert.DeserializeObject<SharedDataContract>(sharedDataRawContent);
             token = sharedDataModel?.Config?.CSRFToken;
             //}
 
             if (string.IsNullOrEmpty(token)) throw new InvalidOperationException("Unable to retrieve CSRF Token");
+
             return token;
         }
 
@@ -133,14 +140,78 @@ namespace Telegram.Bot.Instagram.Instagram.Api.Unofficial
             File.WriteAllText(sessionFile, JsonConvert.SerializeObject(session));
         }
 
-        public async Task<IEnumerable<InstagramMedia>> GetMediaFromPost(Uri uri)
+        public async Task<IEnumerable<InstagramMedia>> GetMediaFromPostAsync(Uri url)
         {
-            throw new NotImplementedException();
+            InstagramPost post = await GetInstagramPostAsync(url);
+
+            var results = new List<InstagramMedia>();
+
+            foreach (var graphql in InstagramPostScraper.ExtractGraphql(post))
+            {
+                results.AddRange(InstagramPostScraper.ExtractMediaFromGraphql(graphql));
+            }
+
+            return results;
         }
 
-        public async Task<string[]> DownloadMediaFromPost(Uri uri)
+        private async Task<InstagramPost> GetInstagramPostAsync(Uri url)
         {
-            throw new NotImplementedException();
+            var postId = ExtractInstagrmPostShortCode(url);
+
+            using HttpResponseMessage postResponse = await _httpClient.GetAsync(url);
+
+            if (postResponse.StatusCode != HttpStatusCode.OK) throw new InvalidDataException("Error extracting Post data");
+
+            var postContent = await postResponse.Content.ReadAsStringAsync();
+
+            return new InstagramPost
+            {
+                Shortcode = postId,
+                Url = url,
+                HtmlContent = postContent
+            };
+        }
+
+        private static string ExtractInstagrmPostShortCode(Uri url)
+        {
+            var shortCode = url.AbsoluteUri;
+            shortCode = shortCode.Replace(BaseAddress + "/p/", string.Empty);
+            shortCode = shortCode.Split('?')[0];
+            shortCode = shortCode.Replace("/", "");
+            return shortCode;
+        }
+
+        public async Task<string[]> DownloadMediaFromPostAsync(Uri url, string outputDirectory)
+        {
+            var result = new List<string>();
+            var media = await GetMediaFromPostAsync(url);
+
+            foreach (InstagramMedia item in media)
+            {
+                var fileName = Path.Combine(outputDirectory, $"{item.Name}");
+                if (!File.Exists(fileName))
+                {
+                    await DownloadAsync(item.Url, fileName);
+                }
+                result.Add(fileName);
+            }
+
+            return result.ToArray();
+        }
+
+        private async Task DownloadAsync(Uri requesturl, string filename)
+        {
+            if (requesturl == null) throw new ArgumentNullException(nameof(requesturl));
+            if (filename == null) throw new ArgumentNullException(nameof(filename));
+
+            using var request = new HttpRequestMessage(HttpMethod.Get, requesturl);
+            using HttpResponseMessage response = await _httpClient.SendAsync(request);
+
+            if (response.StatusCode != HttpStatusCode.OK) throw new InvalidDataException("Error downlading media");
+
+            await using Stream contentStream = await response.Content.ReadAsStreamAsync();
+            await using Stream stream = new FileStream(filename, FileMode.Create, FileAccess.Write, FileShare.None, 1024, true);
+            await contentStream.CopyToAsync(stream);
         }
 
         public void Dispose()
