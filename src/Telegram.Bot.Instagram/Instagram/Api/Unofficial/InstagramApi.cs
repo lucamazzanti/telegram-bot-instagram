@@ -76,6 +76,8 @@ namespace Telegram.Bot.Instagram.Instagram.Api.Unofficial
             return true;
         }
 
+        public bool IsAuthenticated => UserName != null;
+
         private async Task<string> GetTokenAsync()
         {
             // ReSharper disable once JoinDeclarationAndInitializer

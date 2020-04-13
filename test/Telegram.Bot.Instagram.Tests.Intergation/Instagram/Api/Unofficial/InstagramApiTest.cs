@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -26,7 +27,7 @@ namespace Telegram.Bot.Instagram.Tests.Intergation.Instagram.Api.Unofficial
 
             var publicPost = new Uri(publicUrl);
             using var clientHandler = new HttpClientHandler();
-            var api = new InstagramApi(clientHandler);
+            using var api = new InstagramApi(clientHandler);
 
             var media = await api.GetMediaFromPostAsync(publicPost);
 
@@ -45,7 +46,7 @@ namespace Telegram.Bot.Instagram.Tests.Intergation.Instagram.Api.Unofficial
 
             var privatePost = new Uri(privateUrl);
             using var clientHandler = new HttpClientHandler();
-            var api = new InstagramApi(clientHandler);
+            using var api = new InstagramApi(clientHandler);
 
             Assert.Empty(api.UserName);
 
@@ -73,7 +74,7 @@ namespace Telegram.Bot.Instagram.Tests.Intergation.Instagram.Api.Unofficial
             var privatePost = new Uri(privateUrl);
             var userCredentials = new UserCredentials(userName, password);
             using var clientHandler = new HttpClientHandler();
-            var api = new InstagramApi(clientHandler);
+            using var api = new InstagramApi(clientHandler);
             var loggedIn = await api.LoginAsync(userCredentials);
 
             Assert.True(loggedIn);
@@ -82,6 +83,38 @@ namespace Telegram.Bot.Instagram.Tests.Intergation.Instagram.Api.Unofficial
             var media = await api.GetMediaFromPostAsync(privatePost);
 
             Assert.NotEmpty(media);
+        }
+
+        [Fact]
+        [Description("It can reload a user session")]
+        public async Task CanReloadSession()
+        {
+            //set private user credential
+            string userName = null;
+            string password = null;
+
+            Assert.NotNull(userName);
+            Assert.NotNull(password);
+
+            var userCredentials = new UserCredentials(userName, password);
+
+            using var clientHandler1 = new HttpClientHandler();
+            using var api1 = new InstagramApi(clientHandler1);
+            var loggedIn = await api1.LoginAsync(userCredentials);
+
+            Assert.True(api1.IsAuthenticated);
+
+            var sessionFile = Path.GetTempFileName();
+            api1.SaveSession(sessionFile);
+
+            using var clientHandler2 = new HttpClientHandler();
+            using var api2 = new InstagramApi(clientHandler2);
+
+            Assert.False(api2.IsAuthenticated);
+
+            api2.LoadSession(sessionFile);
+
+            Assert.True(api2.IsAuthenticated);
         }
     }
 }

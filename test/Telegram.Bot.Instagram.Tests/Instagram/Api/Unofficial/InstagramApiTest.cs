@@ -74,6 +74,7 @@ namespace Telegram.Bot.Instagram.Tests.Instagram.Api.Unofficial
             var isLogged = await api.LoginAsync(userCredentials);
 
             Assert.True(isLogged);
+            Assert.True(api.IsAuthenticated);
         }
 
         [Fact]
@@ -87,6 +88,7 @@ namespace Telegram.Bot.Instagram.Tests.Instagram.Api.Unofficial
             var isLogged = await api.LoginAsync(userCredentials);
 
             Assert.True(isLogged);
+            Assert.True(api.IsAuthenticated);
             Assert.Equal(userCredentials.UserName, api.UserName);
         }
 
@@ -102,6 +104,7 @@ namespace Telegram.Bot.Instagram.Tests.Instagram.Api.Unofficial
 
             Assert.Null(api.UserName);
             Assert.False(isLogged);
+            Assert.False(api.IsAuthenticated);
         }
 
         [Fact]
@@ -115,6 +118,7 @@ namespace Telegram.Bot.Instagram.Tests.Instagram.Api.Unofficial
 
             Assert.NotNull(api.UserName);
             Assert.True(isLogged);
+            Assert.True(api.IsAuthenticated);
 
             api.SaveSession(sessionFile);
 
@@ -140,9 +144,11 @@ namespace Telegram.Bot.Instagram.Tests.Instagram.Api.Unofficial
             using var api = new InstagramApi(clientHandler);
 
             Assert.Null(api.UserName);
+            Assert.False(api.IsAuthenticated);
 
             api.LoadSession(sessionFile);
 
+            Assert.True(api.IsAuthenticated);
             Assert.Equal("johndoe", api.UserName);
         }
     }
