@@ -48,7 +48,7 @@ namespace Telegram.Bot.Instagram.Instagram.Api.Unofficial
 
         public async Task<bool> LoginAsync(UserCredentials userCredentials)
         {
-            var token = string.Empty;
+            var token = await GetTokenAsync();
 
             var fields = new Dictionary<string, string>
             {
@@ -70,6 +70,31 @@ namespace Telegram.Bot.Instagram.Instagram.Api.Unofficial
             UserName = userCredentials.UserName;
 
             return true;
+        }
+
+        private async Task<string> GetTokenAsync()
+        {
+            // ReSharper disable once JoinDeclarationAndInitializer
+            string token;
+
+            //first retrieval: from client cookie
+            // ReSharper disable once UnusedVariable
+            //HttpResponseMessage retrieveCookiesResponse = await _httpClient.GetAsync(_httpClient.BaseAddress);
+            //CookieCollection cookies = _httpClientHandler.CookieContainer.GetCookies(_httpClient.BaseAddress);
+            //foreach (Cookie cookie in cookies) if (cookie.Name == Constants.Csrftoken) token = cookie.Value;
+
+            ////second retrieval: get new one from share data url
+            //if (string.IsNullOrEmpty(token))
+            //{
+            HttpResponseMessage sharedDataResponse = await _httpClient.GetAsync("/data/shared_data/");
+            if (sharedDataResponse.StatusCode != HttpStatusCode.OK) throw new InvalidOperationException("Unable to retrieve CSRF Token");
+            var sharedDataRawContent = await sharedDataResponse.Content.ReadAsStringAsync();
+            var sharedDataModel = JsonConvert.DeserializeObject<SharedDataContract>(sharedDataRawContent);
+            token = sharedDataModel?.Config?.CSRFToken;
+            //}
+
+            if (string.IsNullOrEmpty(token)) throw new InvalidOperationException("Unable to retrieve CSRF Token");
+            return token;
         }
 
         public void LoadSession(string sessionFile)
