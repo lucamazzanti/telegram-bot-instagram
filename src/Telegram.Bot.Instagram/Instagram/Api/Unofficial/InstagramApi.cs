@@ -13,7 +13,7 @@ using Telegram.Bot.Instagram.Instagram.Api.Unofficial.Models;
 
 namespace Telegram.Bot.Instagram.Instagram.Api.Unofficial
 {
-    public class InstagramApi : IDisposable
+    public class InstagramApi : IDisposable, IInstagramApi
     {
         private const string BaseAddress = "https://www.instagram.com";
         private readonly Uri _baseurl = new Uri("https://www.instagram.com");
@@ -29,16 +29,15 @@ namespace Telegram.Bot.Instagram.Instagram.Api.Unofficial
             _httpClientHandler = httpClientHandler ?? throw new ArgumentNullException(nameof(httpClientHandler));
             _cookieContainer = _httpClientHandler.CookieContainer ?? throw new ArgumentException("CookieContainer property mandatory", nameof(httpClientHandler));
             _httpClient = new HttpClient(_httpClientHandler) {BaseAddress = new Uri(BaseAddress) };
-
-            PrepareRequestHeaders(_httpClient.DefaultRequestHeaders);
         }
 
-        private void PrepareRequestHeaders(HttpRequestHeaders headers)
+        private void PrepareRequestHeaders(HttpRequestHeaders headers, string token)
         {
             headers.Host = "www.instagram.com";
             headers.Referrer = _baseurl;
             headers.ConnectionClose = false;
 
+            //warning: allow-origin: https://www.instagram.com doesn't work for media url using CDN
             headers.Add("Origin", BaseAddress);
             headers.Add("Connection", "keep-alive");
             headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.162 Safari/537.36");
@@ -47,7 +46,7 @@ namespace Telegram.Bot.Instagram.Instagram.Api.Unofficial
             headers.Add("Sec-Fetch-Mode", "cors");
             headers.Add("X-Instagram-AJAX", "1");
             headers.Add("X-IG-App-ID", "1");
-            //headers.Add("X-CSRFToken", token);
+            headers.Add("X-CSRFToken", token);
         }
 
         public async Task<bool> LoginAsync(UserCredentials userCredentials)
@@ -64,8 +63,7 @@ namespace Telegram.Bot.Instagram.Instagram.Api.Unofficial
                 Content = new FormUrlEncodedContent(fields)
             };
 
-            //PrepareRequestHeaders(request.Headers);
-            request.Headers.Add("X-CSRFToken", token);
+            PrepareRequestHeaders(request.Headers, token);
 
             using HttpResponseMessage response = await _httpClient.SendAsync(request);
 
